@@ -3,7 +3,7 @@ import { HeaderWrapper } from "@/components/header-wrapper"
 import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Calendar, Eye, Share2, Tag } from "lucide-react"
+import { ArrowLeft, Calendar, Eye, Share2, Tag, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
@@ -139,6 +139,30 @@ export default async function BlogPostPage({ params }: Props) {
                 alt={post.title}
                 className="w-full h-full object-cover"
               />
+            </div>
+          )}
+
+          {/* Sponsor Badge */}
+          {post.is_sponsored && post.sponsor_name && (
+            <div className="mb-8 p-4 rounded-lg bg-accent/10 border border-accent/20">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-accent" />
+                <span className="text-sm text-muted-foreground">
+                  Sponsored by{" "}
+                  {post.sponsor_url ? (
+                    <a 
+                      href={post.sponsor_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline font-medium"
+                    >
+                      {post.sponsor_name}
+                    </a>
+                  ) : (
+                    <span className="text-accent font-medium">{post.sponsor_name}</span>
+                  )}
+                </span>
+              </div>
             </div>
           )}
 

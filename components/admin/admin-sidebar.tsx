@@ -18,7 +18,8 @@ import {
   TrendingDown,
   Brain,
   CreditCard,
-  Snowflake
+  Snowflake,
+  BookOpen
 } from "lucide-react"
 
 const navItems = [
@@ -51,6 +52,11 @@ const navItems = [
     title: "Review Tracking",
     href: "/admin/reviews",
     icon: TrendingDown,
+  },
+  {
+    title: "Blog Posts",
+    href: "/admin/blog",
+    icon: BookOpen,
   },
   {
     title: "Discussions",

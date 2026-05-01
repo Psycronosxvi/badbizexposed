@@ -3,7 +3,7 @@ import { HeaderWrapper } from "@/components/header-wrapper"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Calendar, Eye, Tag } from "lucide-react"
+import { BookOpen, Calendar, Eye, Tag, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { Metadata } from "next"
@@ -83,10 +83,16 @@ export default async function BlogPage() {
                         </div>
                       )}
                       <CardHeader>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           {post.category && (
                             <Badge variant="secondary" className="text-xs">
                               {post.category}
+                            </Badge>
+                          )}
+                          {post.is_sponsored && (
+                            <Badge variant="outline" className="text-xs border-accent/30 text-accent">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              Sponsored
                             </Badge>
                           )}
                         </div>
