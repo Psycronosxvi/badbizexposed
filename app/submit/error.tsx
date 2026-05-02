@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, RefreshCw, ArrowLeft } from "lucide-react"
 import Link from "next/link"
@@ -12,8 +12,12 @@ export default function SubmitError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const [showDetails, setShowDetails] = useState(false)
+
   useEffect(() => {
     console.error("[v0] Submit page error:", error)
+    console.error("[v0] Error stack:", error.stack)
+    console.error("[v0] Error message:", error.message)
   }, [error])
 
   return (
@@ -30,6 +34,14 @@ export default function SubmitError({
           <p className="text-muted-foreground">
             We had trouble loading the complaint form. Please try again.
           </p>
+          {showDetails && (
+            <div className="mt-4 p-4 bg-muted rounded-lg text-left">
+              <p className="text-sm font-mono text-destructive break-all">{error.message}</p>
+              {error.digest && (
+                <p className="text-xs text-muted-foreground mt-2">Digest: {error.digest}</p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -44,6 +56,12 @@ export default function SubmitError({
             </Link>
           </Button>
         </div>
+        <button 
+          onClick={() => setShowDetails(!showDetails)}
+          className="text-xs text-muted-foreground underline"
+        >
+          {showDetails ? "Hide" : "Show"} error details
+        </button>
       </div>
     </div>
   )

@@ -277,21 +277,17 @@ export default async function CompaniesPage({
 
   // Fetch companies with filters
   let query = supabase
-    .from('companies')
-    .select(`
-      *,
-      category:categories(*),
-      state:states(*)
-    `)
+    .from('businesses')
+    .select('*')
 
   if (params.q) {
     query = query.ilike('name', `%${params.q}%`)
   }
   if (params.category) {
-    query = query.eq('categories.slug', params.category)
+    query = query.eq('category', params.category)
   }
   if (params.state) {
-    query = query.eq('states.abbreviation', params.state)
+    query = query.eq('state', params.state)
   }
 
   // Sort
