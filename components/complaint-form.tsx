@@ -21,22 +21,28 @@ import { AlertCircle, Loader2, Upload, X } from "lucide-react"
 import type { Category, State } from "@/lib/types"
 
 interface ComplaintFormProps {
-  categories: Category[]
-  states: State[]
-  companies: { id: string; name: string; slug: string }[]
+  categories?: Category[]
+  states?: State[]
+  companies?: { id: string; name: string; slug: string }[]
   preselectedCompany?: string
 }
 
 export function ComplaintForm({ 
-  categories, 
-  states, 
-  companies,
-  preselectedCompany 
+  categories = [], 
+  states = [], 
+  companies = [],
+  preselectedCompany = ""
 }: ComplaintFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  
+  // Ensure safe arrays to prevent .map errors
+  const safeCategories = Array.isArray(categories) ? categories : []
+  const safeStates = Array.isArray(states) ? states : []
+  const safeCompanies = Array.isArray(companies) ? companies : []
   
   // Form state
   const [title, setTitle] = useState("")
@@ -137,12 +143,12 @@ export function ComplaintForm({
 
         // Get business name for complaint
         const businessName = existingCompanyId 
-          ? companies.find(c => c.id === existingCompanyId)?.name || companyName.trim()
+          ? safeCompanies.find(c => c.id === existingCompanyId)?.name || companyName.trim()
           : companyName.trim()
 
         // Get category name and state name
-        const selectedCategory = categories.find(c => c.id === categoryId)
-        const selectedState = states.find(s => s.id === stateId)
+        const selectedCategory = safeCategories.find(c => c.id === categoryId)
+        const selectedState = safeStates.find(s => s.id === stateId)
 
         // Create the complaint
         const { data: complaint, error: complaintError } = await supabase
@@ -259,7 +265,7 @@ export function ComplaintForm({
           {/* Company Selection */}
           <div className="space-y-2">
             <Label>Company *</Label>
-            {companies.length > 0 && (
+            {safeCompanies.length > 0 && (
               <Select value={existingCompanyId} onValueChange={(val) => {
                 setExistingCompanyId(val)
                 if (val) setCompanyName("")
@@ -269,7 +275,7 @@ export function ComplaintForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">-- Enter new company --</SelectItem>
-                  {companies.map((company) => (
+                  {safeCompanies.map((company) => (
                     <SelectItem key={company.id} value={company.id}>
                       {company.name}
                     </SelectItem>
@@ -296,7 +302,7 @@ export function ComplaintForm({
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {safeCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
@@ -312,7 +318,7 @@ export function ComplaintForm({
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
                 <SelectContent>
-                  {states.map((state) => (
+                  {safeStates.map((state) => (
                     <SelectItem key={state.id} value={state.id}>
                       {state.name}
                     </SelectItem>
