@@ -28,9 +28,8 @@ async function getComplaints(filter: string = 'all') {
     .from('complaints')
     .select(`
       *,
-      company:companies(name, slug),
-      user:profiles(display_name, username, email:id),
-      category:categories(name)
+      business:businesses(name, slug),
+      user:profiles(display_name, email:id)
     `)
     .order('created_at', { ascending: false })
     .limit(50)
@@ -204,10 +203,12 @@ export default async function AdminComplaintsPage({
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      {complaint.company ? (
-                        <Link href={`/business/${complaint.company.slug}`} className="text-primary hover:underline">
-                          {complaint.company.name}
+                      {complaint.business ? (
+                        <Link href={`/business/${complaint.business.slug}`} className="text-primary hover:underline">
+                          {complaint.business.name}
                         </Link>
+                      ) : complaint.business_name ? (
+                        <span className="text-foreground">{complaint.business_name}</span>
                       ) : (
                         <span className="text-muted-foreground">Unknown</span>
                       )}
