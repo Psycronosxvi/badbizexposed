@@ -15,6 +15,7 @@ import {
   BarChart3,
   AlertTriangle,
   Shield,
+  ShieldAlert,
   TrendingDown,
   Brain,
   CreditCard,
@@ -77,6 +78,11 @@ const navItems = [
     title: "Analytics",
     href: "/admin/analytics",
     icon: BarChart3,
+  },
+  {
+    title: "Security Ops",
+    href: "/admin/security",
+    icon: ShieldAlert,
   },
   {
     title: "AI Tools",

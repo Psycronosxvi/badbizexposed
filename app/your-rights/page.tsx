@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { getStateRights, type StateRightsCategory } from "@/lib/state-rights-data"
 import { HeaderWrapper } from "@/components/header-wrapper"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -73,44 +73,23 @@ const CATEGORIES = [
   { id: "hoa_rights", label: "HOA Rights", icon: Building2 },
 ]
 
-interface LegalKnowledge {
-  id: string
-  state_code: string
-  state_name: string
-  category: string
-  title: string
-  official_summary: string
-  plain_language: string
-  key_points: string[]
-  helpful_links: { title: string; url: string }[]
-  last_updated: string
-}
+// Using StateRightsCategory type from lib/state-rights-data.ts
 
 export default function YourRightsPage() {
   const [selectedState, setSelectedState] = useState<string>("")
-  const [legalData, setLegalData] = useState<LegalKnowledge[]>([])
+  const [legalData, setLegalData] = useState<StateRightsCategory[]>([])
   const [loading, setLoading] = useState(false)
   const [usePlainLanguage, setUsePlainLanguage] = useState(true)
-  const supabase = createClient()
 
   useEffect(() => {
     if (selectedState) {
-      fetchLegalData(selectedState)
+      // Use local data instead of database
+      setLoading(true)
+      const data = getStateRights(selectedState)
+      setLegalData(data)
+      setLoading(false)
     }
   }, [selectedState])
-
-  async function fetchLegalData(stateCode: string) {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from("legal_knowledge_base")
-      .select("*")
-      .eq("state_code", stateCode)
-    
-    if (!error && data) {
-      setLegalData(data)
-    }
-    setLoading(false)
-  }
 
   const getCategoryIcon = (category: string) => {
     const cat = CATEGORIES.find(c => c.id === category)
@@ -183,13 +162,10 @@ export default function YourRightsPage() {
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-100 mb-6">
                   <AlertTriangle className="h-10 w-10 text-amber-600" />
                 </div>
-                <h2 className="text-2xl font-semibold mb-4">Coming Soon</h2>
+                <h2 className="text-2xl font-semibold mb-4">Information Being Updated</h2>
                 <p className="text-muted-foreground mb-6">
-                  We&apos;re still building out legal information for {US_STATES.find(s => s.code === selectedState)?.name}. 
-                  Check back soon or try another state.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Currently available: Alabama, California, Texas, Florida, New York
+                  Information for {US_STATES.find(s => s.code === selectedState)?.name} is currently being updated.
+                  Please check back soon.
                 </p>
               </div>
             ) : (

@@ -24,6 +24,12 @@ import {
 import { mockComplaints } from "@/lib/mock-data"
 import { RightsInsightButton } from "@/components/rights-insight-button"
 
+// Helper to check if string is a valid UUID
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  return uuidRegex.test(str)
+}
+
 async function getComplaintData(id: string) {
   const supabase = await createClient()
 
@@ -39,8 +45,21 @@ async function getComplaintData(id: string) {
     profile = data
   }
 
+  // Check if ID looks like a mock ID (not a UUID)
+  if (!isValidUUID(id)) {
+    // Fall back to mock data for non-UUID IDs
+    const mockComplaint = mockComplaints.find(c => c.id === id)
+    if (!mockComplaint) {
+      return { user: profile ? { ...profile, email: user?.email } : null, complaint: null }
+    }
+    return {
+      user: profile ? { ...profile, email: user?.email } : null,
+      complaint: { ...mockComplaint, comments: [] },
+    }
+  }
+
   // Try to fetch complaint from database
-  const { data: complaint } = await supabase
+  const { data: complaint, error } = await supabase
     .from('complaints')
     .select(`
       *,
@@ -50,15 +69,15 @@ async function getComplaintData(id: string) {
     .eq('id', id)
     .single()
 
-  // Fall back to mock data
-  if (!complaint) {
+  // Fall back to mock data if DB returns nothing
+  if (!complaint || error) {
     const mockComplaint = mockComplaints.find(c => c.id === id)
     if (!mockComplaint) {
-      return { user: null, complaint: null }
+      return { user: profile ? { ...profile, email: user?.email } : null, complaint: null }
     }
     return {
       user: profile ? { ...profile, email: user?.email } : null,
-      complaint: mockComplaint,
+      complaint: { ...mockComplaint, comments: [] },
     }
   }
 
