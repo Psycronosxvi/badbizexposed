@@ -44,9 +44,7 @@ async function getComplaintData(id: string) {
     .from('complaints')
     .select(`
       *,
-      company:companies(id, name, slug),
-      category:categories(id, name, slug),
-      state:states(id, name, abbreviation),
+      business:businesses(id, name, slug),
       user:profiles(id, display_name, avatar_url)
     `)
     .eq('id', id)
@@ -129,8 +127,8 @@ export default async function ComplaintDetailPage({
     notFound()
   }
 
-  const companyName = complaint.company_name || complaint.company?.name || 'Unknown Company'
-  const companySlug = complaint.company_slug || complaint.company?.slug
+  const companyName = complaint.business_name || complaint.business?.name || 'Unknown Company'
+  const companySlug = complaint.business_slug || complaint.business?.slug
   const categoryName = typeof complaint.category === 'string' ? complaint.category : complaint.category?.name
   const stateName = typeof complaint.state === 'string' ? complaint.state : complaint.state?.name
   const userName = complaint.user?.display_name || complaint.user?.username || 'Anonymous'

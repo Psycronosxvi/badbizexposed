@@ -101,7 +101,7 @@ export default function AdminCompaniesPage() {
   async function fetchCompanies() {
     setLoading(true)
     let query = supabase
-      .from("companies")
+      .from("businesses")
       .select("*")
       .order("created_at", { ascending: false })
 
@@ -119,7 +119,7 @@ export default function AdminCompaniesPage() {
 
   async function updateCompanyStatus(companyId: string, status: string) {
     const { error } = await supabase
-      .from("companies")
+      .from("businesses")
       .update({ status })
       .eq("id", companyId)
 
@@ -147,7 +147,7 @@ export default function AdminCompaniesPage() {
     if (!selectedCompany) return
 
     const { error } = await supabase
-      .from("companies")
+      .from("businesses")
       .update({
         name: selectedCompany.name,
         category: selectedCompany.category,
@@ -174,12 +174,12 @@ export default function AdminCompaniesPage() {
     // Update all complaints from source to target
     await supabase
       .from("complaints")
-      .update({ company_id: mergeTarget })
-      .eq("company_id", selectedCompany.id)
+      .update({ business_id: mergeTarget })
+      .eq("business_id", selectedCompany.id)
 
     // Archive the source company
     await supabase
-      .from("companies")
+      .from("businesses")
       .update({ status: "archived" })
       .eq("id", selectedCompany.id)
 
