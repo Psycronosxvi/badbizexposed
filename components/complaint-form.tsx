@@ -74,9 +74,12 @@ export function ComplaintForm({
     setFiles(prev => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    
+    console.log("[v0] Form submission started")
+    console.log("[v0] Form data:", { title, content: content.slice(0, 50), companyName, existingCompanyId, categoryId, stateId })
 
     if (!title.trim()) {
       setError("Please enter a title for your complaint")
@@ -102,13 +105,17 @@ export function ComplaintForm({
       setError("Please select a state")
       return
     }
+    
+    console.log("[v0] Validation passed, starting transition")
 
     startTransition(async () => {
       try {
         const supabase = createClient()
+        console.log("[v0] Supabase client created")
         
         // Get current user
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        console.log("[v0] User check:", { user: user?.id, error: userError })
         if (!user) {
           setError("You must be logged in to submit a complaint")
           return
@@ -116,41 +123,51 @@ export function ComplaintForm({
 
         let companyId = existingCompanyId === "new" ? "" : existingCompanyId
 
-        // If new company, create it first
-        if ((!existingCompanyId || existingCompanyId === "new") && companyName.trim()) {
-          const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-          
-          const { data: newCompany, error: companyError } = await supabase
-            .from('businesses')
-            .insert({
-              name: companyName.trim(),
-              slug: slug + '-' + Date.now().toString(36),
-              category: categoryId,
-              city: city.trim() || null,
-              state: stateId,
-            })
-            .select()
-            .single()
-
-          if (companyError) {
-            console.error("Error creating company:", companyError)
-            setError("Failed to create company. Please try again.")
-            return
-          }
-
-          companyId = newCompany.id
-        }
+        // Get category name and state name FIRST (needed for business creation)
+        const selectedCategory = safeCategories.find(c => c.id === categoryId)
+        const selectedState = safeStates.find(s => s.id === stateId)
 
         // Get business name for complaint
         const businessName = (existingCompanyId && existingCompanyId !== "new")
           ? safeCompanies.find(c => c.id === existingCompanyId)?.name || companyName.trim()
           : companyName.trim()
 
-        // Get category name and state name
-        const selectedCategory = safeCategories.find(c => c.id === categoryId)
-        const selectedState = safeStates.find(s => s.id === stateId)
+        // If new company, try to create it (may fail due to RLS - that's ok, we'll just use the name)
+        if ((!existingCompanyId || existingCompanyId === "new") && companyName.trim()) {
+          const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+          
+          try {
+            const { data: newCompany, error: companyError } = await supabase
+              .from('businesses')
+              .insert({
+                name: companyName.trim(),
+                slug: slug + '-' + Date.now().toString(36),
+                category: selectedCategory?.name || categoryId,
+                city: city.trim() || null,
+                state: selectedState?.abbreviation || stateId,
+              })
+              .select()
+              .single()
+
+            if (!companyError && newCompany) {
+              companyId = newCompany.id
+              console.log("[v0] Created new business:", newCompany.id)
+            } else {
+              console.log("[v0] Could not create business (RLS), proceeding with name only:", companyError?.message)
+            }
+          } catch (bizErr) {
+            console.log("[v0] Business creation failed, proceeding with name only:", bizErr)
+          }
+        }
 
         // Create the complaint
+        console.log("[v0] Creating complaint with data:", { 
+          title: title.trim(), 
+          business_name: businessName, 
+          category: selectedCategory?.name || categoryId,
+          state: selectedState?.abbreviation || stateId 
+        })
+        
         const { data: complaint, error: complaintError } = await supabase
           .from('complaints')
           .insert({
@@ -169,59 +186,72 @@ export function ComplaintForm({
           .select()
           .single()
 
+        console.log("[v0] Complaint insert result:", { complaint: complaint?.id, error: complaintError })
+
         if (complaintError) {
-          console.error("Error creating complaint:", complaintError)
-          setError("Failed to submit complaint. Please try again.")
+          console.error("[v0] Error creating complaint:", complaintError)
+          setError(`Failed to submit complaint: ${complaintError.message}`)
           return
         }
 
-        // Update business complaint count
+        // Update business complaint count (non-blocking)
         if (companyId) {
-          const { data: business } = await supabase
-            .from('businesses')
-            .select('complaint_count')
-            .eq('id', companyId)
-            .single()
-          
-          if (business) {
-            await supabase
+          try {
+            const { data: business } = await supabase
               .from('businesses')
-              .update({ complaint_count: (business.complaint_count || 0) + 1 })
+              .select('complaint_count')
               .eq('id', companyId)
+              .single()
+            
+            if (business) {
+              await supabase
+                .from('businesses')
+                .update({ complaint_count: (business.complaint_count || 0) + 1 })
+                .eq('id', companyId)
+            }
+          } catch (updateErr) {
+            console.log("[v0] Business count update failed (non-critical):", updateErr)
           }
         }
 
-        // Award points to user
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('points')
-          .eq('id', user.id)
-          .single()
-        
-        await supabase
-          .from('profiles')
-          .update({ points: (profile?.points || 0) + 10 })
-          .eq('id', user.id)
-        
-        // Add to points history
-        await supabase
-          .from('points_history')
-          .insert({
-            user_id: user.id,
-            points: 10,
-            reason: 'Submitted a complaint',
-            reference_type: 'complaint',
-            reference_id: complaint.id
-          })
+        // Award points to user (non-blocking - don't fail if this doesn't work)
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('points')
+            .eq('id', user.id)
+            .single()
+          
+          if (profile) {
+            await supabase
+              .from('profiles')
+              .update({ points: (profile.points || 0) + 10 })
+              .eq('id', user.id)
+          }
+          
+          // Add to points history (may fail due to RLS, but that's ok)
+          await supabase
+            .from('points_history')
+            .insert({
+              user_id: user.id,
+              points: 10,
+              reason: 'Submitted a complaint',
+              reference_type: 'complaint',
+              reference_id: complaint.id
+            })
+        } catch (pointsErr) {
+          console.log("[v0] Points update failed (non-critical):", pointsErr)
+        }
 
         // Show success and redirect
+        console.log("[v0] Success! Redirecting to complaint:", complaint.id)
         setSuccess(true)
         setTimeout(() => {
           router.push(`/complaints/${complaint.id}`)
         }, 1500)
       } catch (err) {
-        console.error("Unexpected error:", err)
-        setError("An unexpected error occurred. Please try again.")
+        console.error("[v0] Unexpected error:", err)
+        setError(`An unexpected error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`)
       }
     })
   }
