@@ -90,7 +90,7 @@ export function ComplaintForm({
       setError("Your complaint description must be at least 50 characters long. Please provide more details.")
       return
     }
-    if (!existingCompanyId && !companyName.trim()) {
+    if ((!existingCompanyId || existingCompanyId === "new") && !companyName.trim()) {
       setError("Please select or enter a company name")
       return
     }
@@ -114,10 +114,10 @@ export function ComplaintForm({
           return
         }
 
-        let companyId = existingCompanyId
+        let companyId = existingCompanyId === "new" ? "" : existingCompanyId
 
         // If new company, create it first
-        if (!existingCompanyId && companyName.trim()) {
+        if ((!existingCompanyId || existingCompanyId === "new") && companyName.trim()) {
           const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
           
           const { data: newCompany, error: companyError } = await supabase
@@ -142,7 +142,7 @@ export function ComplaintForm({
         }
 
         // Get business name for complaint
-        const businessName = existingCompanyId 
+        const businessName = (existingCompanyId && existingCompanyId !== "new")
           ? safeCompanies.find(c => c.id === existingCompanyId)?.name || companyName.trim()
           : companyName.trim()
 
@@ -266,15 +266,22 @@ export function ComplaintForm({
           <div className="space-y-2">
             <Label>Company *</Label>
             {safeCompanies.length > 0 && (
-              <Select value={existingCompanyId} onValueChange={(val) => {
-                setExistingCompanyId(val)
-                if (val) setCompanyName("")
-              }}>
+              <Select 
+                value={existingCompanyId || "new"} 
+                onValueChange={(val) => {
+                  if (val === "new") {
+                    setExistingCompanyId("")
+                  } else {
+                    setExistingCompanyId(val)
+                    setCompanyName("")
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select existing company or enter new below" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">-- Enter new company --</SelectItem>
+                  <SelectItem value="new">-- Enter new company --</SelectItem>
                   {safeCompanies.map((company) => (
                     <SelectItem key={company.id} value={company.id}>
                       {company.name}
@@ -284,7 +291,7 @@ export function ComplaintForm({
               </Select>
             )}
             
-            {!existingCompanyId && (
+            {(!existingCompanyId || existingCompanyId === "new") && (
               <Input
                 placeholder="Enter company name"
                 value={companyName}
