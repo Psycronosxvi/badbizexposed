@@ -53,9 +53,7 @@ async function getComplaintsData(params: SearchParams) {
     .from('complaints')
     .select(`
       *,
-      company:companies(name, slug),
-      category:categories(name, slug),
-      state:states(name, abbreviation),
+      business:businesses(name, slug),
       user:profiles(display_name, avatar_url)
     `)
     .order('created_at', { ascending: false })
@@ -242,7 +240,7 @@ export default async function ComplaintsPage({
 
                         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                           <span className="font-medium text-foreground">
-                            {complaint.company_name || complaint.company?.name}
+                            {complaint.business_name || complaint.business?.name}
                           </span>
                           <span>•</span>
                           <span>{typeof complaint.category === 'string' ? complaint.category : complaint.category?.name}</span>

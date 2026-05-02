@@ -57,8 +57,7 @@ async function getDashboardData() {
     .from('complaints')
     .select(`
       *,
-      company:companies(name, slug),
-      category:categories(name)
+      business:businesses(name, slug)
     `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
@@ -287,7 +286,7 @@ export default async function DashboardPage() {
                               {getStatusBadge(complaint.status)}
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>{complaint.company?.name || 'Unknown Company'}</span>
+                              <span>{complaint.business_name || complaint.business?.name || 'Unknown Company'}</span>
                               <span>•</span>
                               <div className="flex items-center gap-1">
                                 <ThumbsUp className="h-3 w-3" />

@@ -65,14 +65,10 @@ export default async function SearchPage({
     profile = data
   }
 
-  // Search companies
+  // Search companies/businesses
   const { data: companies } = query ? await supabase
-    .from('companies')
-    .select(`
-      *,
-      category:categories(name),
-      state:states(abbreviation)
-    `)
+    .from('businesses')
+    .select('*')
     .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
     .order('complaint_count', { ascending: false })
     .limit(20)
@@ -83,7 +79,7 @@ export default async function SearchPage({
     .from('complaints')
     .select(`
       *,
-      company:companies(name, slug),
+      business:businesses(name, slug),
       user:profiles(display_name)
     `)
     .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
@@ -222,7 +218,7 @@ export default async function SearchPage({
                               {complaint.content}
                             </p>
                             <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span>{complaint.company?.name || 'Unknown Company'}</span>
+                              <span>{complaint.business_name || complaint.business?.name || 'Unknown Company'}</span>
                               <div className="flex items-center gap-1">
                                 <ThumbsUp className="h-3 w-3" />
                                 {complaint.upvotes || 0}
@@ -311,7 +307,7 @@ export default async function SearchPage({
                           {complaint.content}
                         </p>
                         <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          <span>{complaint.company?.name || 'Unknown Company'}</span>
+                          <span>{complaint.business_name || complaint.business?.name || 'Unknown Company'}</span>
                           <div className="flex items-center gap-1">
                             <ThumbsUp className="h-3 w-3" />
                             {complaint.upvotes || 0}

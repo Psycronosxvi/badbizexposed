@@ -140,6 +140,10 @@ export function ComplaintForm({
           ? companies.find(c => c.id === existingCompanyId)?.name || companyName.trim()
           : companyName.trim()
 
+        // Get category name and state name
+        const selectedCategory = categories.find(c => c.id === categoryId)
+        const selectedState = states.find(s => s.id === stateId)
+
         // Create the complaint
         const { data: complaint, error: complaintError } = await supabase
           .from('complaints')
@@ -149,9 +153,9 @@ export function ComplaintForm({
             business_id: companyId || null,
             business_name: businessName,
             user_id: user.id,
-            category: categoryId,
+            category: selectedCategory?.name || categoryId,
             city: city.trim() || null,
-            state: stateId,
+            state: selectedState?.abbreviation || stateId,
             severity: severity[0],
             is_anonymous: isAnonymous,
             status: 'pending',

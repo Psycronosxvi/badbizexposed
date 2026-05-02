@@ -37,16 +37,15 @@ async function getTrendingData() {
     .from('complaints')
     .select(`
       *,
-      company:companies(name, slug),
-      category:categories(name),
-      state:states(name)
+      business:businesses(name, slug),
+      user:profiles(display_name)
     `)
     .order('upvotes', { ascending: false })
     .limit(20)
 
-  // Get trending companies
+  // Get trending businesses
   const { data: companies } = await supabase
-    .from('companies')
+    .from('businesses')
     .select('*')
     .order('complaint_count', { ascending: false })
     .limit(10)
@@ -156,7 +155,7 @@ export default async function TrendingPage() {
 
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span className="font-medium text-foreground">
-                              {complaint.company_name || complaint.company?.name}
+                              {complaint.business_name || complaint.business?.name}
                             </span>
                             <div className="flex items-center gap-1">
                               <ThumbsUp className="h-4 w-4" />
