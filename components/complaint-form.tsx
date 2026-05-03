@@ -77,9 +77,6 @@ export function ComplaintForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    
-    console.log("[v0] Form submission started")
-    console.log("[v0] Form data:", { title, content: content.slice(0, 50), companyName, existingCompanyId, categoryId, stateId })
 
     if (!title.trim()) {
       setError("Please enter a title for your complaint")
@@ -105,17 +102,13 @@ export function ComplaintForm({
       setError("Please select a state")
       return
     }
-    
-    console.log("[v0] Validation passed, starting transition")
 
     startTransition(async () => {
       try {
         const supabase = createClient()
-        console.log("[v0] Supabase client created")
         
         // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        console.log("[v0] User check:", { user: user?.id, error: userError })
+        const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
           setError("You must be logged in to submit a complaint")
           return
@@ -151,23 +144,13 @@ export function ComplaintForm({
 
             if (!companyError && newCompany) {
               companyId = newCompany.id
-              console.log("[v0] Created new business:", newCompany.id)
-            } else {
-              console.log("[v0] Could not create business (RLS), proceeding with name only:", companyError?.message)
             }
-          } catch (bizErr) {
-            console.log("[v0] Business creation failed, proceeding with name only:", bizErr)
+          } catch {
+            // Business creation failed, proceeding with name only
           }
         }
 
         // Create the complaint
-        console.log("[v0] Creating complaint with data:", { 
-          title: title.trim(), 
-          business_name: businessName, 
-          category: selectedCategory?.name || categoryId,
-          state: selectedState?.abbreviation || stateId 
-        })
-        
         const { data: complaint, error: complaintError } = await supabase
           .from('complaints')
           .insert({
@@ -186,10 +169,7 @@ export function ComplaintForm({
           .select()
           .single()
 
-        console.log("[v0] Complaint insert result:", { complaint: complaint?.id, error: complaintError })
-
         if (complaintError) {
-          console.error("[v0] Error creating complaint:", complaintError)
           setError(`Failed to submit complaint: ${complaintError.message}`)
           return
         }
@@ -209,8 +189,8 @@ export function ComplaintForm({
                 .update({ complaint_count: (business.complaint_count || 0) + 1 })
                 .eq('id', companyId)
             }
-          } catch (updateErr) {
-            console.log("[v0] Business count update failed (non-critical):", updateErr)
+          } catch {
+            // Business count update failed (non-critical)
           }
         }
 
@@ -239,12 +219,11 @@ export function ComplaintForm({
               reference_type: 'complaint',
               reference_id: complaint.id
             })
-        } catch (pointsErr) {
-          console.log("[v0] Points update failed (non-critical):", pointsErr)
+        } catch {
+          // Points update failed (non-critical)
         }
 
         // Show success and redirect
-        console.log("[v0] Success! Redirecting to complaint:", complaint.id)
         setSuccess(true)
         setTimeout(() => {
           router.push(`/complaints/${complaint.id}`)
